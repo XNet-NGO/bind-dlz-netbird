@@ -2,7 +2,7 @@
 
 A high-performance, custom BIND 9 Dynamically Loadable Zone (DLZ) plugin that integrates directly with the [Netbird](https://netbird.io/) Management API. This plugin allows BIND to resolve DNS queries for Netbird peers in real-time without manual zone file management or server restarts.
 
-## 🚀 Features
+## Features
 
 *   **Real-time Integration**: Fetches peer data directly from the Netbird API.
 *   **High Performance**: Implements a "Dual-Plane" architecture.
@@ -11,7 +11,7 @@ A high-performance, custom BIND 9 Dynamically Loadable Zone (DLZ) plugin that in
 *   **Resilient**: If the Netbird API goes down, the plugin continues to serve the last known good cache.
 *   **Smart Label Handling**: automatically sanitizes Netbird hostnames (converting spaces to hyphens) and strips FQDNs to match relative labels correctly.
 
-## 🛠️ Architecture
+## Architecture
 
 The plugin operates by efficiently bridging slow HTTP APIs with fast DNS protocols:
 
@@ -19,7 +19,7 @@ The plugin operates by efficiently bridging slow HTTP APIs with fast DNS protoco
 2.  **Atomic Swap**: Updates the in-memory lookup table using an atomic pointer swap, ensuring no locking contention during updates.
 3.  **Zero-Latency Lookups**: BIND threads read from memory, delivering sub-millisecond response times.
 
-## 📋 Prerequisites
+## Prerequisites
 
 To build this plugin, you need a Linux environment (or WSL2) with GCC and development headers for BIND's dependencies.
 
@@ -35,7 +35,7 @@ sudo apt-get update
 sudo apt-get install build-essential libcurl4-openssl-dev libjansson-dev
 ```
 
-## 🏗️ Build Instructions
+## Build Instructions
 
 1.  Clone the repository:
     ```bash
@@ -55,7 +55,7 @@ sudo apt-get install build-essential libcurl4-openssl-dev libjansson-dev
     sudo cp netbird_dlz.so /usr/lib/bind/
     ```
 
-## ⚙️ Configuration
+## Configuration
 
 Edit your BIND configuration file (usually `/etc/bind/named.conf.local` or `/etc/named.conf`) and add a `dlz` zone definition.
 
@@ -79,7 +79,7 @@ dlz "netbird_zone" {
 };
 ```
 
-## 🔍 Usage
+## Usage
 
 Once configured, restart BIND:
 
@@ -94,7 +94,7 @@ dig @localhost nas.vpn.xnet.ngo +short
 # Output: 100.64.0.5
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 *   **Logs**: The plugin logs to BIND's standard logging facility (usually `/var/log/syslog` or systemd journal). Look for "Netbird DLZ" messages.
     ```bash
@@ -107,7 +107,7 @@ dig @localhost nas.vpn.xnet.ngo +short
     ```
 *   **API Errors**: If the API token is invalid, check logs for HTTP 401/403 errors.
 
-## 📄 License
+## License
 
 Copyright (C) XNet NGO.
 
