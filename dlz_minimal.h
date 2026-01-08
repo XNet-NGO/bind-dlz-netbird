@@ -21,14 +21,16 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+#include <stdbool.h>
+
 /*
  * This header defines the minimal interface required for a dynamically
- * loadable zone (DLZ) driver.
+ * loadable zone (DLZ) driver for BIND 9.18+.
  */
 
 typedef unsigned int isc_result_t;
-typedef int isc_boolean_t;
-typedef unsigned int isc_uint32_t;
+typedef uint32_t dns_ttl_t;
 
 #define ISC_R_SUCCESS           0
 #define ISC_R_NOMEMORY          1
@@ -39,18 +41,6 @@ typedef unsigned int isc_uint32_t;
 
 #define ISC_TRUE  1
 #define ISC_FALSE 0
-
-/*
- * Method pointers used by the DLZ module to interact with BIND.
- */
-typedef isc_result_t (*dns_sdlz_putrr_t)(void *driverarg, const char *type,
-                                         isc_uint32_t ttl, const char *data);
-
-typedef isc_result_t (*dns_sdlz_putnamedrr_t)(void *driverarg, const char *name,
-                                                const char *type, isc_uint32_t ttl,
-                                                const char *data);
-
-typedef void (*dns_dlz_write_log_t)(int level, const char *fmt, ...);
 
 /*
  * Log levels
@@ -65,38 +55,32 @@ typedef void (*dns_dlz_write_log_t)(int level, const char *fmt, ...);
  * DLZ Driver Constants
  */
 #define DLZ_DLOPEN_VERSION 3
+#define DLZ_DLOPEN_AGE     0
 
 /*
- * The initialization function type.
+ * Opaque types from BIND - we don't need their internals
  */
-typedef isc_result_t (*dlz_dlopen_init_t)(isc_uint32_t *version);
+typedef struct dns_sdlzlookup dns_sdlzlookup_t;
+typedef struct dns_sdlzallnodes dns_sdlzallnodes_t;
+typedef struct dns_clientinfomethods dns_clientinfomethods_t;
+typedef struct dns_clientinfo dns_clientinfo_t;
 
 /*
- * The creation function type.
+ * The dns_sdlz_putrr function - provided by BIND, we declare it here
  */
-typedef isc_result_t (*dlz_create_t)(const char *dlzname, unsigned int argc,
-                                     char *argv[], void **dbdata,
-                                     const char **helper_name);
+extern isc_result_t dns_sdlz_putrr(dns_sdlzlookup_t *lookup, const char *type,
+                                    dns_ttl_t ttl, const char *data);
 
 /*
- * The destruction function type.
+ * The dns_sdlz_putsoa function - for authority queries
  */
-typedef void (*dlz_destroy_t)(void *dbdata);
+extern isc_result_t dns_sdlz_putsoa(dns_sdlzlookup_t *lookup, const char *mname,
+                                     const char *rname, uint32_t serial);
 
 /*
- * The findzonedb function type.
+ * Logging helper type (not used in dlopen drivers typically)
  */
-typedef isc_result_t (*dlz_findzonedb_t)(void *dbdata, const char *name,
-                                         void **user_data, void **driver_data);
-
-/*
- * The lookup function type.
- */
-typedef isc_result_t (*dlz_lookup_t)(const char *zone, const char *name,
-                                     void *driver_data,
-                                     dns_sdlz_putrr_t putrr,
-                                     dns_sdlz_putnamedrr_t putnamedrr,
-                                     void *ptr);
+typedef void (*dns_dlz_write_log_t)(int level, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

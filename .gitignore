@@ -1,0 +1,5 @@
+docker-compose.yml
+named.conf
+named.conf.fixed
+*.o
+*.so

@@ -1,0 +1,54 @@
+FROM ubuntu:jammy
+
+RUN apt-get update && apt-get install -y wget gnupg2 psmisc lsof && \
+    wget -qO- https://download.webmin.com/jcameron-key.asc | apt-key add - && \
+    echo 'deb http://download.webmin.com/download/repository sarge contrib' > /etc/apt/sources.list.d/webmin.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y bind9 bind9utils bind9-dev libcurl4 libcurl4-openssl-dev webmin build-essential --no-install-recommends && \
+    apt-get clean
+
+# Build Jansson from source with -fPIC and hidden visibility to avoid symbol collision with libjson-c linked by BIND
+RUN wget https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz && \
+    tar -xzf jansson-2.14.tar.gz && \
+    cd jansson-2.14 && \
+    ./configure --disable-shared --enable-static --with-pic CFLAGS="-fvisibility=hidden" && \
+    make && \
+    make install
+
+# Copy source code and build the plugin using official BIND headers
+COPY netbird_dlz.c /usr/src/
+RUN cd /usr/src && \
+    gcc -fPIC -shared -o netbird_dlz.so netbird_dlz.c \
+        -I/usr/include/bind9 -I/usr/include \
+        -lcurl /usr/local/lib/libjansson.a \
+        -ldns -lisc && \
+    cp netbird_dlz.so /usr/lib/netbird_dlz.so && \
+    chmod 644 /usr/lib/netbird_dlz.so
+
+# Ensure libcurl is found
+RUN ldconfig
+
+RUN sed -i 's/ssl=1/ssl=0/' /etc/webmin/miniserv.conf && \
+    echo 'referers=dns.xnet.ngo' >> /etc/webmin/config && \
+    echo 'relative_redir=0' >> /etc/webmin/miniserv.conf && \
+    echo 'redirect_host=dns.xnet.ngo' >> /etc/webmin/miniserv.conf && \
+    echo 'noredirect=1' >> /etc/webmin/miniserv.conf
+
+RUN echo 'xnet-admin:x:0' > /etc/webmin/miniserv.users && \
+    echo 'xnet-admin: *' > /etc/webmin/webmin.acl && \
+    /usr/share/webmin/changepass.pl /etc/webmin xnet-admin '!5Tay5ecure!'
+
+EXPOSE 53/tcp 53/udp 10000/tcp
+
+# Create entrypoint script to handle service startup order
+RUN printf '#!/bin/bash\n\
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/aarch64-linux-gnu\n\
+/usr/bin/perl /usr/share/webmin/miniserv.pl /etc/webmin/miniserv.conf &\n\
+echo "Starting named..."\n\
+/usr/sbin/named -u bind -g -4\n\
+EXIT_CODE=$?\n\
+echo "Named process exited with code: $EXIT_CODE"\n\
+echo "Keeping container alive for debugging..."\n\
+tail -f /dev/null\n' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
