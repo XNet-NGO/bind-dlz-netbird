@@ -3,3 +3,4 @@ named.conf
 named.conf.fixed
 *.o
 *.so
+announcements/
