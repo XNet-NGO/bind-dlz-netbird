@@ -138,6 +138,16 @@ static void fetch_and_update(nb_state_t *state) {
         // Error Handling: API down? Keep old cache (do nothing).
         goto cleanup;
     }
+
+    // DEBUG: Dump JSON to /tmp/netbird_debug.json for inspection
+    FILE *debug_fp = fopen("/tmp/netbird_debug.json", "w");
+    if (debug_fp) {
+        if (chunk.ptr) {
+            fputs(chunk.ptr, debug_fp);
+        }
+        fclose(debug_fp);
+        nb_log(state, ISC_LOG_INFO, "Netbird DLZ: Debug dump written to /tmp/netbird_debug.json");
+    }
     
     // Parse JSON
     json_error_t error;
