@@ -41,8 +41,10 @@ The README includes:
 
 Tested with BIND 9.18.39 on Ubuntu 22.04 (ARM64). Should work with any BIND 9.18+ release using the modern DLZ API with dns_sdlzlookup_t.
 
-Feedback and contributions welcome!
+Feedback and contributions are welcome.
 
 -- 
 XNet Inc.
 https://xnet.ngo
+
+XNet is a 501(c)(3) nonprofit organization building network infrastructure for underserved communities.

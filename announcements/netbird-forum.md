@@ -1,8 +1,12 @@
 # BIND DLZ Plugin for Netbird - Dynamic DNS for VPN Peers
 
-Hey Netbird community! 👋
+**Post to: https://forum.netbird.io/** (Category: Show & Tell or Integrations)
 
-We've just open-sourced a **BIND 9.18+ DLZ plugin** that automatically resolves Netbird peer hostnames to their WireGuard tunnel IPs.
+---
+
+Hello,
+
+We have released an open-source **BIND 9.18+ DLZ plugin** that automatically resolves Netbird peer hostnames to their WireGuard tunnel IPs.
 
 ## The Problem
 
@@ -20,11 +24,11 @@ nas.bird.example.com.    60    IN    A    100.105.130.31
 
 ## Features
 
-- 🔄 **Background sync** - Fetches peer data from Netbird API every 5 minutes
-- 🔒 **Thread-safe** - Read-write locks for concurrent DNS queries
-- ⚡ **Zero-downtime updates** - Atomic pointer swap for cache refresh
-- 🐳 **Docker-ready** - Works great in containerized BIND deployments
-- 🔧 **Self-hosted friendly** - Point to your own Netbird API endpoint
+- **Background sync** - Fetches peer data from Netbird API every 5 minutes
+- **Thread-safe** - Read-write locks for concurrent DNS queries
+- **Zero-downtime updates** - Atomic pointer swap for cache refresh
+- **Docker-ready** - Works in containerized BIND deployments
+- **Self-hosted friendly** - Point to your own Netbird API endpoint
 
 ## Architecture
 
@@ -60,9 +64,11 @@ git clone https://github.com/XNet-NGO/bind-dlz-netbird.git
 
 ## GitHub Repository
 
-🔗 **https://github.com/XNet-NGO/bind-dlz-netbird**
+https://github.com/XNet-NGO/bind-dlz-netbird
 
-We'd love feedback from the Netbird community! This is our first open-source contribution from XNet Inc., a nonprofit building network infrastructure.
+We welcome feedback from the Netbird community. This is an open-source contribution from XNet Inc., a 501(c)(3) nonprofit organization building network infrastructure for underserved communities.
+
+Website: https://xnet.ngo
 
 ---
 
