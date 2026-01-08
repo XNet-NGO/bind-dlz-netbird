@@ -1,38 +1,45 @@
 # BIND DLZ Netbird Plugin
 
-A high-performance, custom BIND 9 Dynamically Loadable Zone (DLZ) plugin that integrates directly with the [Netbird](https://netbird.io/) Management API. This plugin allows BIND to resolve DNS queries for Netbird peers in real-time without manual zone file management or server restarts.
+A high-performance BIND 9 Dynamically Loadable Zone (DLZ) plugin that integrates with the [Netbird](https://netbird.io/) VPN Management API. This plugin enables automatic DNS resolution for all Netbird peers without manual zone file management.
 
 ## Features
 
-*   **Real-time Integration**: Fetches peer data directly from the Netbird API.
-*   **High Performance**: Implements a "Dual-Plane" architecture.
-    *   **Management Plane**: Background thread handles API fetching and JSON parsing separate from the query path.
-    *   **Data Plane**: DNS lookups are served from an in-memory, thread-safe shadow table (Read-Write Lock optimized) with $O(n)$ lookup time.
-*   **Resilient**: If the Netbird API goes down, the plugin continues to serve the last known good cache.
-*   **Smart Label Handling**: automatically sanitizes Netbird hostnames (converting spaces to hyphens) and strips FQDNs to match relative labels correctly.
+*   **Real-time Integration**: Fetches peer data directly from the Netbird API every 5 minutes
+*   **High Performance**: "Dual-Plane" architecture separates API fetching from DNS queries
+    *   **Management Plane**: Background thread handles API fetching and JSON parsing
+    *   **Data Plane**: DNS lookups served from thread-safe in-memory cache with sub-millisecond response times
+*   **Resilient**: Continues serving last known good cache if the Netbird API goes down
+*   **BIND 9.18+ Compatible**: Uses official BIND DLZ dlopen API with proper `dns_sdlz_putrr()` integration
+*   **Case-insensitive**: Hostname lookups work regardless of case (e.g., `IndigoStation` matches `indigostation`)
 
 ## Architecture
 
-The plugin operates by efficiently bridging slow HTTP APIs with fast DNS protocols:
-
-1.  **Background Thread**: Wakes up every 5 minutes (configurable in source) to fetch the peer list.
-2.  **Atomic Swap**: Updates the in-memory lookup table using an atomic pointer swap, ensuring no locking contention during updates.
-3.  **Zero-Latency Lookups**: BIND threads read from memory, delivering sub-millisecond response times.
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Netbird API    │────▶│  Background      │────▶│  In-Memory      │
+│  (every 5 min)  │     │  Thread          │     │  Record Cache   │
+└─────────────────┘     └──────────────────┘     └────────┬────────┘
+                                                          │ rwlock
+                                                          ▼
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  DNS Query      │────▶│  dlz_lookup()    │────▶│  BIND Response  │
+│  (dig, nslookup)│     │  (< 1ms)         │     │  (A record)     │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+```
 
 ## Prerequisites
 
-To build this plugin, you need a Linux environment (or WSL2) with GCC and development headers for BIND's dependencies.
-
-*   **BIND 9** (headers are included via `dlz_minimal.h` for portability)
-*   **libcurl** (for API requests)
-*   **libjansson** (for JSON parsing)
-*   **pthread** (standard in glibc)
-
-### Install Dependencies (Debian/Ubuntu/WSL)
+**BIND 9.18+** with development headers:
 
 ```bash
-sudo apt-get update
-sudo apt-get install build-essential libcurl4-openssl-dev libjansson-dev
+# Debian/Ubuntu
+sudo apt-get install bind9 bind9-dev libcurl4-openssl-dev build-essential
+
+# Jansson is built statically to avoid symbol conflicts with BIND's libjson-c
+wget https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.gz
+tar -xzf jansson-2.14.tar.gz && cd jansson-2.14
+./configure --disable-shared --enable-static --with-pic CFLAGS="-fvisibility=hidden"
+make && sudo make install
 ```
 
 ## Build Instructions
@@ -45,70 +52,85 @@ sudo apt-get install build-essential libcurl4-openssl-dev libjansson-dev
 
 2.  Compile the shared library:
     ```bash
-    make
+    gcc -fPIC -shared -o netbird_dlz.so netbird_dlz.c \
+        -I/usr/include/bind9 -I/usr/include \
+        -lcurl /usr/local/lib/libjansson.a \
+        -ldns -lisc
     ```
 
-    This will produce `netbird_dlz.so`.
-
-3.  (Optional) Install to system library path:
+3.  Install to system library path:
     ```bash
-    sudo cp netbird_dlz.so /usr/lib/bind/
+    sudo cp netbird_dlz.so /usr/lib/netbird_dlz.so
+    sudo chmod 644 /usr/lib/netbird_dlz.so
     ```
 
 ## Configuration
 
-Edit your BIND configuration file (usually `/etc/bind/named.conf.local` or `/etc/named.conf`) and add a `dlz` zone definition.
-
-### Syntax
+Add a DLZ block to your BIND configuration (`/etc/bind/named.conf` or `/etc/bind/named.conf.local`):
 
 ```bind
-dlz "netbird_zone" {
-    database "dlopen /path/to/netbird_dlz.so <ZONE_NAME> <API_KEY> [API_URL]";
+dlz "netbird" {
+    database "dlopen /usr/lib/netbird_dlz.so bird.example.com YOUR_API_KEY https://your-netbird.example.com/api/peers";
+    search yes;
 };
 ```
 
-*   **ZONE_NAME**: The DNS zone you are serving (e.g., `vpn.xnet.ngo`).
-*   **API_KEY**: Your Netbird Personal Access Token (PAT).
-*   **API_URL** (Optional): Defaults to `https://api.netbird.io/api/peers`. Useful if you host self-hosted Netbird.
+**Parameters:**
+| Parameter | Description |
+|-----------|-------------|
+| `bird.example.com` | The DNS zone to serve (e.g., `bird.xnet.ngo`) |
+| `YOUR_API_KEY` | Netbird API token (from Settings → Personal Access Tokens) |
+| `https://...` | Netbird API URL (optional, defaults to `https://api.netbird.io/api/peers`) |
 
-### Example Configuration
+**Important:** Add `search yes;` to allow BIND to search the DLZ for any query in the zone.
 
-```bind
-dlz "netbird_zone" {
-    database "dlopen /usr/lib/bind/netbird_dlz.so vpn.xnet.ngo nb_pwt_xxxxxxxxxxxxxxxxxxxxxxxxxx";
-};
-```
+## Docker Deployment
+
+See `Dockerfile.bind` for a complete containerized deployment example that:
+- Builds Jansson from source with hidden visibility
+- Compiles the DLZ plugin with proper BIND 9.18+ headers
+- Includes Webmin for DNS management
 
 ## Usage
 
-Once configured, restart BIND:
+Restart BIND after configuration:
 
 ```bash
 sudo systemctl restart bind9
 ```
 
-Test a query using `dig`. If you have a Netbird peer named "NAS", it should resolve at `nas.vpn.xnet.ngo`:
+Test DNS resolution for your Netbird peers:
 
 ```bash
-dig @localhost nas.vpn.xnet.ngo +short
-# Output: 100.64.0.5
+# Query a peer by hostname
+dig @localhost myserver.bird.example.com A +short
+# Output: 100.105.x.x
+
+# Full response with TTL
+dig @localhost myserver.bird.example.com A
 ```
+
+## Debug Logging
+
+The plugin writes debug logs to `/tmp/dlz.log`:
+
+```bash
+tail -f /tmp/dlz.log
+```
+
+API responses are cached to `/tmp/netbird_debug.json` for inspection.
 
 ## Troubleshooting
 
-*   **Logs**: The plugin logs to BIND's standard logging facility (usually `/var/log/syslog` or systemd journal). Look for "Netbird DLZ" messages.
-    ```bash
-    journalctl -u bind9 -f
-    ```
-*   **Permission Denied**: Ensure the user running BIND (usually `bind` or `named`) has read/execute permissions on `netbird_dlz.so`.
-    ```bash
-    sudo chown root:bind /usr/lib/bind/netbird_dlz.so
-    sudo chmod 750 /usr/lib/bind/netbird_dlz.so
-    ```
-*   **API Errors**: If the API token is invalid, check logs for HTTP 401/403 errors.
+| Issue | Solution |
+|-------|----------|
+| `SERVFAIL` response | Check `/tmp/dlz.log` for errors. Verify API key is valid. |
+| Container crashes with exit code 139 | Segfault - ensure using BIND 9.18+ headers and linking `-ldns -lisc` |
+| Records not updating | Background thread fetches every 5 min. Check API connectivity. |
+| Case sensitivity | Lookups are case-insensitive. `MyServer` matches `myserver`. |
 
 ## License
 
-Copyright (C) XNet NGO.
+Copyright (C) 2026 XNet Inc.
 
 Permission to use, copy, modify, and distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
