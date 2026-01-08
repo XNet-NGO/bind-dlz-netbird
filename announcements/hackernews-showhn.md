@@ -12,4 +12,4 @@ Technical details:
 
 Netbird is an open-source WireGuard mesh VPN. This plugin enables integration of peer discovery with existing BIND infrastructure.
 
-Developed by XNet Inc. (https://xnet.ngo), a 501(c)(3) nonprofit building network infrastructure for underserved communities.
+Developed by XNet Inc. (https://xnet.ngo), a nonprofit building network infrastructure for underserved communities.

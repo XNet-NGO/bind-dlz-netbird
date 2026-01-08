@@ -47,4 +47,4 @@ Feedback and contributions are welcome.
 XNet Inc.
 https://xnet.ngo
 
-XNet is a 501(c)(3) nonprofit organization building network infrastructure for underserved communities.
+XNet is a nonprofit corporation building network infrastructure for underserved communities.

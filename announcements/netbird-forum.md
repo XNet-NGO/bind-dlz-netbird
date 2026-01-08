@@ -66,7 +66,7 @@ git clone https://github.com/XNet-NGO/bind-dlz-netbird.git
 
 https://github.com/XNet-NGO/bind-dlz-netbird
 
-We welcome feedback from the Netbird community. This is an open-source contribution from XNet Inc., a 501(c)(3) nonprofit organization building network infrastructure for underserved communities.
+We welcome feedback from the Netbird community. This is an open-source contribution from XNet Inc., a nonprofit corporation building network infrastructure for underserved communities.
 
 Website: https://xnet.ngo
 

@@ -31,4 +31,4 @@ Feedback and contributions are welcome.
 
 --
 XNet Inc. (https://xnet.ngo)
-A 501(c)(3) nonprofit building network infrastructure
+a nonprofit building network infrastructure

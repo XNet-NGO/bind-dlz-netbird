@@ -42,7 +42,7 @@ No zone files to maintain. Peers join the network and DNS just works.
 
 https://github.com/XNet-NGO/bind-dlz-netbird
 
-This project is developed by XNet Inc., a 501(c)(3) nonprofit organization building network infrastructure for underserved communities. Feedback and contributions are welcome.
+This project is developed by XNet Inc., a nonprofit corporation building network infrastructure for underserved communities. Feedback and contributions are welcome.
 
 Website: https://xnet.ngo
 

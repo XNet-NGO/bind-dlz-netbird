@@ -38,7 +38,7 @@ Single .so file, Docker-ready.
 ---
 
 ## Tweet 4
-Developed by @XNetNGO, a 501(c)(3) nonprofit building network infrastructure for underserved communities.
+Developed by @XNetNGO, a nonprofit building network infrastructure for underserved communities.
 
 Feedback and contributions welcome.
 
