@@ -1,0 +1,1 @@
+Build Instructions: 1. Install userspace-rcu to /opt/liburcu 2. Run: export CFLAGS='-I/opt/liburcu/include' 3. Run: export LDFLAGS='-L/opt/liburcu/lib' 4. make
