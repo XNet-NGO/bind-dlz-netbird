@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include <urcu.h>
+#include <urcu/wfcqueue.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
